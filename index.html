@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clips du jour</title>
+<style>
+:root{--bg:#17131f;--panel:#211b2d;--line:#37304a;--text:#ece7f5;--muted:#9d93b3;--accent:#b794ff;--ok:#6fd8a8;--warn:#ffb35c;--bad:#ff6b7a;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,"Segoe UI",sans-serif}
+.wrap{max-width:880px;margin:0 auto;padding:28px 18px 80px}
+h1{font-size:30px;margin:0 0 4px;letter-spacing:-.015em}
+.sub{margin:0 0 20px;color:var(--muted)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:var(--accent);color:#1a1226;border:0;border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer}
+button.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+button:disabled{opacity:.45;cursor:default}
+input[type=text],input[type=date],select,textarea{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+details{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:14px}
+summary{cursor:pointer;font-weight:600}
+.how{color:var(--muted);padding-left:20px;margin:10px 0}
+code{background:var(--bg);padding:1px 6px;border-radius:5px;color:var(--text);word-break:break-all}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin-top:12px}
+.full{grid-column:1/-1}
+.f{display:grid;gap:4px;color:var(--muted);font-size:13px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.bar input[type=date]{width:auto}.bar select{width:auto}
+.bar2{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;color:var(--muted);font-size:14px;margin-bottom:6px}
+.warn{color:var(--warn)}
+#msg{min-height:24px;margin:6px 0 14px;color:var(--muted)}#msg.bad{color:var(--bad)}
+.clip{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
+.clip.sel{border-left-color:var(--accent)}
+.head{display:grid;grid-template-columns:128px 1fr auto;gap:12px;align-items:center}
+.head img{width:128px;aspect-ratio:16/9;object-fit:cover;border-radius:6px;background:var(--bg)}
+.meta{display:grid;gap:2px;min-width:0}.meta b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meta span{color:var(--muted);font-size:13px}
+.pick{display:flex;gap:6px;align-items:center;font-weight:600;cursor:pointer}
+.work{display:grid;gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:transparent;color:var(--text);border:1px solid var(--line);font-weight:500;padding:4px 10px}
+.chip.on{background:var(--accent);color:#1a1226;border-color:var(--accent)}
+.final{display:flex;gap:12px;align-items:flex-start;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.out{flex:1;word-break:break-word}.len{color:var(--ok);font-variant-numeric:tabular-nums;white-space:nowrap}.len.bad{color:var(--bad)}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.row a{color:var(--accent)}.chk{display:flex;gap:6px;align-items:center}
+.drop{display:block;border:1.5px dashed var(--line);border-radius:8px;padding:14px;text-align:center;color:var(--muted);cursor:pointer}
+.drop.hot{border-color:var(--accent);color:var(--text)}
+.st{color:var(--muted);font-size:14px}
+@media(max-width:640px){.head{grid-template-columns:96px 1fr}.head img{width:96px}.pick{grid-column:1/-1}.grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Clips du jour</h1>
+  <p class="sub">Choisis tes clips, prépare les titres, partage depuis Twitch, puis range les fichiers.</p>
+
+  <details id="setup">
+    <summary>Mise en route et réglages</summary>
+    <ol class="how">
+      <li>Crée une application sur dev.twitch.tv/console (type Public) avec cette URL de redirection OAuth : <code id="redir"></code></li>
+      <li>Ouvre cette page par une adresse http (par exemple <code>python -m http.server 8080</code> dans son dossier, puis localhost:8080, ou GitHub Pages), pas en double-cliquant sur le fichier.</li>
+      <li>Colle le Client ID ci-dessous, puis clique sur « Se connecter à Twitch ». Recharge les clips après avoir modifié les réglages.</li>
+    </ol>
+    <div class="grid">
+      <label class="f">Client ID Twitch<input id="clientId" type="text" autocomplete="off"></label>
+      <label class="f">Ta chaîne<input id="channel" type="text"></label>
+      <label class="f full">Amis, séparés par des virgules<input id="friends" type="text"></label>
+      <label class="f full">Fin de titre fixe<input id="suffix" type="text"></label>
+      <label class="f full">Hashtags de jeu personnalisés, une ligne par jeu (ex. PUBG: BATTLEGROUNDS=Pubg)<textarea id="aliases" rows="3"></textarea></label>
+    </div>
+  </details>
+
+  <div class="bar">
+    <input type="date" id="day" aria-label="Jour des clips">
+    <select id="sort" aria-label="Tri"><option value="views">Plus vus d’abord</option><option value="time">Par heure</option></select>
+    <button id="load">Charger les clips</button>
+    <button class="ghost" id="login">Se connecter à Twitch</button>
+    <button class="ghost" id="folder">Choisir le dossier de rangement</button>
+  </div>
+  <div class="bar2">
+    <label><input type="checkbox" id="byMonth" checked> Copie dans « Par mois »</label>
+    <label><input type="checkbox" id="byGame" checked> Copie dans « Par jeu »</label>
+    <span id="cnt"></span>
+  </div>
+  <p id="msg" role="status"></p>
+  <section id="list"></section>
+</div>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LS=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
+const cfg=Object.assign({clientId:'',channel:'enguytv',friends:'Eyklor, Ronhin, GDsheg, SadWrathProduction',suffix:'EN LIVE SUR TWITCH @enguy @enguytv #enguy',aliases:''},LS('cfg',{}));
+let posted=LS('posted',{}),root=null,clips=[],games={},S={},token=sessionStorage.getItem('tw');
+const redirect=location.origin+location.pathname;
+
+if(location.hash.includes('access_token')){
+  token=new URLSearchParams(location.hash.slice(1)).get('access_token');
+  sessionStorage.setItem('tw',token);history.replaceState(null,'',location.pathname);
+}
+
+['clientId','channel','friends','suffix','aliases'].forEach(k=>{
+  const el=$('#'+k);el.value=cfg[k];
+  el.addEventListener('input',()=>{cfg[k]=el.value.trim();localStorage.setItem('cfg',JSON.stringify(cfg))});
+});
+
+const say=(m,bad)=>{const e=$('#msg');e.textContent=m;e.className=bad?'bad':''};
+const setAuth=()=>{$('#login').textContent=token?'Connecté à Twitch':'Se connecter à Twitch'};
+const friends=()=>cfg.friends.split(',').map(s=>s.trim().replace(/^@/,'')).filter(Boolean);
+const aliasMap=()=>Object.fromEntries(cfg.aliases.split('\n').map(l=>l.split('=').map(x=>x.trim())).filter(a=>a[0]&&a[1]).map(([a,b])=>[a.toLowerCase(),b]));
+const tagFor=n=>n?(aliasMap()[n.toLowerCase()]||n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]/g,'')):'';
+const fname=t=>t.replace(/\s*\|\s*/g,' - ').replace(/[<>:"\/\\?*\x00-\x1f]/g,'').replace(/\s+/g,' ').trim().slice(0,150).replace(/[. ]+$/,'');
+
+async function api(p){
+  const r=await fetch('https://api.twitch.tv/helix/'+p,{headers:{Authorization:'Bearer '+token,'Client-Id':cfg.clientId}});
+  if(r.status===401){sessionStorage.removeItem('tw');token=null;setAuth();throw new Error('Session expirée : clique sur « Se connecter à Twitch ».')}
+  if(!r.ok)throw new Error('Twitch a répondu '+r.status+'.');
+  return r.json();
+}
+
+$('#login').onclick=()=>{
+  if(!cfg.clientId)return say('Renseigne d’abord ton Client ID Twitch dans les réglages.',true);
+  if(location.protocol==='file:')return say('Ouvre cette page par une adresse http (voir « Mise en route »).',true);
+  location.href='https://id.twitch.tv/oauth2/authorize?'+new URLSearchParams({client_id:cfg.clientId,redirect_uri:redirect,response_type:'token'});
+};
+
+$('#folder').onclick=async()=>{
+  if(!window.showDirectoryPicker)return say('Utilise Chrome ou Edge pour ranger les fichiers.',true);
+  try{
+    root=await showDirectoryPicker({mode:'readwrite'});
+    $('#folder').textContent='Dossier : '+root.name;
+    document.querySelectorAll('.clip').forEach(e=>e.__upd&&e.__upd());
+  }catch{}
+};
+
+$('#load').onclick=async()=>{
+  try{
+    if(!token)return say('Connecte-toi d’abord à Twitch.',true);
+    say('Chargement…');
+    const [y,m,d]=$('#day').value.split('-').map(Number);
+    const a=new Date(y,m-1,d),b=new Date(y,m-1,d+1);
+    const u=(await api('users?login='+encodeURIComponent(cfg.channel))).data[0];
+    if(!u)return say('Chaîne introuvable.',true);
+    clips=(await api(`clips?broadcaster_id=${u.id}&started_at=${a.toISOString()}&ended_at=${b.toISOString()}&first=100`)).data;
+    const ids=[...new Set(clips.map(c=>c.game_id).filter(Boolean))];
+    games={};
+    for(let i=0;i<ids.length;i+=100)(await api('games?'+ids.slice(i,i+100).map(x=>'id='+x).join('&'))).data.forEach(g=>games[g.id]=g.name);
+    say(clips.length?clips.length+' clip(s) trouvé(s).':'Aucun clip ce jour-là.');
+    render();
+  }catch(e){say(e.message,true)}
+};
+$('#sort').onchange=()=>clips.length&&render();
+
+function count(){
+  const on=clips.filter(c=>S[c.id]&&S[c.id].on).length,sh=clips.filter(c=>posted[c.id]).length;
+  $('#cnt').innerHTML=`Sélection <b class="${on>3?'warn':''}">${on}/3</b>, partagés <b>${sh}/3</b>`;
+}
+
+function render(){
+  const L=$('#list');L.innerHTML='';
+  const arr=[...clips].sort($('#sort').value==='views'?(x,y)=>y.view_count-x.view_count:(x,y)=>x.created_at.localeCompare(y.created_at));
+  arr.forEach(c=>{
+    const st=S[c.id]??={on:false,people:new Set(),file:null};
+    L.append(st.el??=card(c,st));
+  });
+  count();
+}
+
+function card(c,st){
+  const g=games[c.game_id]||'',dur=Math.round(c.duration);
+  const el=document.createElement('article');el.className='clip';
+  el.innerHTML=`<div class="head"><img src="${esc(c.thumbnail_url)}" alt="" loading="lazy"><div class="meta"><b>${esc(c.title)}</b><span>${Math.floor(dur/60)}:${String(dur%60).padStart(2,'0')}, ${c.view_count} vue(s), ${esc(g||'jeu inconnu')}, clippé par ${esc(c.creator_name)}</span></div><label class="pick"><input type="checkbox" class="on"> Garder</label></div>
+  <div class="work" hidden>
+    <label class="f">Titre court<input type="text" class="ttl" maxlength="70" placeholder="Ex. Il a oublié de recharger"></label>
+    <div class="f">Avec qui<div class="chips">${friends().map(n=>`<button type="button" class="chip" data-n="${esc(n)}">@${esc(n)}</button>`).join('')}</div></div>
+    <label class="f">Hashtag du jeu<input type="text" class="tag" value="${esc(tagFor(g))}"></label>
+    <div class="final"><output class="out"></output><span class="len"></span></div>
+    <div class="row"><button type="button" class="copy">Copier le titre</button><a href="${esc(c.url)}" target="_blank" rel="noopener">Ouvrir le clip</a><label class="chk"><input type="checkbox" class="posted"> Partagé</label></div>
+    <label class="drop"><input type="file" accept="video/*" hidden><span>Dépose ici le clip téléchargé depuis Twitch</span></label>
+    <div class="row"><button type="button" class="save" disabled>Ranger sur le PC</button><span class="st"></span></div>
+  </div>`;
+  const q=s=>$(s,el),work=q('.work');
+  const full=()=>{
+    const t=q('.ttl').value.trim(),tag=q('.tag').value.trim().replace(/^#/,'');
+    const head=[t,...[...st.people].map(n=>'@'+n),tag?'#'+tag:''].filter(Boolean).join(' ');
+    return head?head+' | '+cfg.suffix:cfg.suffix;
+  };
+  const upd=()=>{
+    const f=full(),n=[...f].length,l=q('.len');
+    q('.out').textContent=f;l.textContent=n+'/100';l.className='len'+(n>100?' bad':'');
+    q('.save').disabled=!(st.file&&root);
+  };
+  q('.on').onchange=e=>{st.on=e.target.checked;work.hidden=!st.on;el.classList.toggle('sel',st.on);upd();count()};
+  q('.ttl').oninput=upd;q('.tag').oninput=upd;
+  el.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{
+    const n=b.dataset.n;st.people.has(n)?st.people.delete(n):st.people.add(n);
+    b.classList.toggle('on',st.people.has(n));upd();
+  });
+  q('.copy').onclick=async()=>{
+    try{await navigator.clipboard.writeText(full());q('.st').textContent='Titre copié.'}
+    catch{q('.st').textContent='Copie impossible, sélectionne le titre à la main.'}
+  };
+  const pc=q('.posted');pc.checked=!!posted[c.id];
+  pc.onchange=()=>{posted[c.id]=pc.checked||undefined;localStorage.setItem('posted',JSON.stringify(posted));count()};
+  const drop=q('.drop'),fi=q('input[type=file]');
+  const setFile=f=>{if(!f)return;st.file=f;$('span',drop).textContent=f.name;upd()};
+  fi.onchange=()=>setFile(fi.files[0]);
+  drop.ondragover=e=>{e.preventDefault();drop.classList.add('hot')};
+  drop.ondragleave=()=>drop.classList.remove('hot');
+  drop.ondrop=e=>{e.preventDefault();drop.classList.remove('hot');setFile(e.dataTransfer.files[0])};
+  q('.save').onclick=async()=>{
+    const s=q('.st');
+    try{
+      const ext=(st.file.name.match(/\.[^.]+$/)||['.mp4'])[0],name=fname(full())+ext;
+      const dt=new Date(c.created_at),mois=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
+      const dests=[];
+      if($('#byMonth').checked)dests.push(['Par mois',mois]);
+      if($('#byGame').checked)dests.push(['Par jeu',fname(q('.tag').value.replace(/^#/,'')||g||'Sans jeu')]);
+      if(!dests.length)return s.textContent='Coche au moins un dossier de destination.';
+      for(const p of dests){
+        let d=root;for(const seg of p)d=await d.getDirectoryHandle(seg,{create:true});
+        const w=await(await d.getFileHandle(name,{create:true})).createWritable();
+        await w.write(st.file);await w.close();
+      }
+      s.textContent='Rangé dans '+dests.map(p=>p.join('/')).join(' et ')+'.';
+    }catch(e){s.textContent='Échec : '+e.message}
+  };
+  el.__upd=upd;upd();
+  return el;
+}
+
+$('#day').value=new Date().toLocaleDateString('sv-SE');
+$('#redir').textContent=redirect;
+setAuth();count();
+</script>
+</body>
+</html>
